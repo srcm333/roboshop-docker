@@ -18,9 +18,56 @@ services:
     - "80:80"
     depends_on:
     - catalogue
+    - user
+    - cart
+    - payment
+    - shipping
+  user:
+    build: ./user
+    image: joindevops/user:v1
+    container_name: user
+    environment:
+      MONGO: true
+      REDIS_URL: 'redis://redis:6379'
+      MONGO_URL: "mongodb://mongodb:27017/users"
+    depends_on: 
+    - redis
+    - mongodb
+  cart:
+    build: ./cart
+    image: joindevops/cart:v1
+    container_name: cart
+    environment:
+      MONGO: true
+      REDIS_HOST: redis
+      CATALOGUE_HOST: catalogue
+      CATALOGUE_PORT: 8080
+    depends_on: 
+    - redis
+    - catalogue
+  shipping:
+    build: ./shipping
+    image: joindevops/shipping:v1
+    container_name: shipping
+    environment:
+      CART_ENDPOINT: "cart:8080"
+      DB_HOST: mysql
+    depends_on: 
+    - mysql
+    - cart
+  redis:
+    image: redis:7
+    container_name: redis # docker run -d --name redis --network roboshop redis:7
+  mysql:
+    image: joindevops/mysql:v1
+    build: ./mysql
+    container_name: mysql
+    command: --mysql-native-password=ON ---innodb-lock_wait_timeout=120
+    environment:
+      MYSQL_ROOT_PASSWORD: "RoboShop@1"
 networks:
   default: # this means all the service in this file use this network
     name: roboshop
     driver: bridge
-    external: false # if true it should be created manuallly, if false docker create this network
+    external: false # if true it should be created manually, if false docker create this network
 
